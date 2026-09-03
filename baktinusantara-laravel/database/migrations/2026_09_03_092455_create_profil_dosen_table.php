@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('universitas_id')->constrained('profil_universitas')->cascadeOnDelete();
             $table->foreignId('ditambahkan_oleh')->constrained('users');
             $table->string('nip')->nullable();
+            $table->string('no_hp')->nullable();
             $table->timestamps();
         });
     }
