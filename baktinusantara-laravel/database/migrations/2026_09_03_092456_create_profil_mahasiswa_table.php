@@ -13,6 +13,13 @@ return new class extends Migration
     {
         Schema::create('profil_mahasiswa', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('nim');
+            $table->string('universitas');
+            $table->string('jurusan');
+            $table->unsignedTinyInteger('semester')->nullable();
+            $table->string('ktm_file_url')->nullable();
+            $table->timestamp('verified_at')->nullable();
             $table->timestamps();
         });
     }

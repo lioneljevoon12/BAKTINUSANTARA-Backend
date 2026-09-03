@@ -13,6 +13,16 @@ return new class extends Migration
     {
         Schema::create('profil_desa', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('nama_desa');
+            $table->string('kecamatan')->nullable();
+            $table->string('kabupaten')->nullable();
+            $table->string('provinsi')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->string('sk_file_url')->nullable();
+            $table->timestamp('verified_at')->nullable();
+            $table->string('kontak_resmi')->nullable();
             $table->timestamps();
         });
     }

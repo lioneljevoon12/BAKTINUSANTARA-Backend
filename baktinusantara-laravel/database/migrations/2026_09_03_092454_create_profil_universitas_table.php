@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('profil_universitas', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('nama_universitas');
+            $table->string('kode_univ')->nullable();
+            $table->timestamp('verified_at')->nullable();
             $table->timestamps();
         });
     }

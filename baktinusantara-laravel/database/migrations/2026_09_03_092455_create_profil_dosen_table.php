@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('profil_dosen', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('universitas_id')->constrained('profil_universitas')->cascadeOnDelete();
+            $table->foreignId('ditambahkan_oleh')->constrained('users');
+            $table->string('nip')->nullable();
             $table->timestamps();
         });
     }
