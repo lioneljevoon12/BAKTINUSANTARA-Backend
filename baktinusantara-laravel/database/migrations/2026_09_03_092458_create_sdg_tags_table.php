@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('sdg_tags', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('kode_sdg');
+            $table->string('nama_sdg');
         });
     }
 

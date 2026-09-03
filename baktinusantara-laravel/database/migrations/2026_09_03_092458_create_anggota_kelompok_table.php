@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('anggota_kelompok', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('kelompok_id')->constrained('kelompok')->cascadeOnDelete();
+            $table->foreignId('user_id')->unique()->constrained('users'); // 1 mahasiswa cuma boleh 1 kelompok
+            $table->string('jurusan_kontribusi')->nullable();
+            $table->enum('role_in_group', ['ketua','anggota'])->default('anggota');
             $table->timestamps();
         });
     }

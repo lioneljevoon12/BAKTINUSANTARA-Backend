@@ -13,6 +13,17 @@ return new class extends Migration
     {
         Schema::create('aspirasi', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('desa_id')->constrained('profil_desa')->cascadeOnDelete();
+            $table->string('pelapor_nama');
+            $table->string('pelapor_wa');
+            $table->enum('kategori', ['umkm','kesehatan','lingkungan','pendidikan','fasilitas']);
+            $table->text('deskripsi');
+            $table->decimal('latitude', 10, 7);
+            $table->decimal('longitude', 10, 7);
+            $table->string('foto_url')->nullable();
+            $table->enum('urgensi', ['rendah','sedang','mendesak'])->default('sedang');
+            $table->enum('status', ['menunggu','terverifikasi','ditolak'])->default('menunggu');
+            $table->text('alasan_tolak')->nullable();
             $table->timestamps();
         });
     }

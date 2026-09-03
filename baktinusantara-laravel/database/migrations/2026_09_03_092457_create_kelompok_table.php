@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('kelompok', function (Blueprint $table) {
             $table->id();
+            $table->string('nama_kelompok');
+            $table->foreignId('ketua_id')->constrained('users');
+            $table->foreignId('dosen_id')->nullable()->constrained('profil_dosen');
+            $table->enum('status', ['aktif','selesai'])->default('aktif');
             $table->timestamps();
         });
     }
