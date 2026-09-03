@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('laporan_dosen', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('dosen_id')->constrained('profil_dosen')->cascadeOnDelete();
+            $table->foreignId('desa_id')->constrained('profil_desa')->cascadeOnDelete();
+            $table->foreignId('proposal_id')->nullable()->constrained('proposal');
+            $table->enum('status', ['menunggu','ditinjau','selesai'])->default('menunggu');
+            $table->text('isi');
             $table->timestamps();
         });
     }

@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('portofolio_publik', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('luaran_id')->unique()->constrained('luaran_akhir')->cascadeOnDelete();
+            $table->string('slug_public')->unique();
+            $table->text('ringkasan_dampak')->nullable();
+            $table->text('testimoni_desa')->nullable();
+            $table->string('sertifikat_pdf_url')->nullable();
+            $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });
     }

@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('progress_mingguan', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('proposal_id')->constrained('proposal')->cascadeOnDelete();
+            $table->unsignedTinyInteger('minggu_ke');
+            $table->unsignedTinyInteger('persentase')->default(0);
+            $table->text('deskripsi')->nullable();
+            $table->string('foto_url')->nullable();
+            $table->boolean('is_locked')->default(false);
             $table->timestamps();
         });
     }

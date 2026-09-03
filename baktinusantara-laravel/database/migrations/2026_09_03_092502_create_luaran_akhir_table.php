@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('luaran_akhir', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('proposal_id')->unique()->constrained('proposal')->cascadeOnDelete();
+            $table->string('file_deliverable_url');
+            $table->text('deskripsi')->nullable();
+            $table->enum('status_verifikasi', ['menunggu','verified'])->default('menunggu');
+            $table->foreignId('disahkan_oleh')->nullable()->constrained('users');
+            $table->timestamp('disahkan_at')->nullable();
             $table->timestamps();
         });
     }
