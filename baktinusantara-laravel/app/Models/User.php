@@ -17,11 +17,7 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
-    protected $fillable = [
-        'name',
-        'email',
-        'password',
-    ];
+    protected $fillable = ['name', 'email', 'password', 'phone_wa', 'role', 'is_verified'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -45,4 +41,11 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function profilMahasiswa() { return $this->hasOne(ProfilMahasiswa::class); }
+    public function profilDesa() { return $this->hasOne(ProfilDesa::class); }
+    public function profilDosen() { return $this->hasOne(ProfilDosen::class); }
+    public function profilUniversitas() { return $this->hasOne(ProfilUniversitas::class); }
+    public function kelompokDiketuai() { return $this->hasMany(Kelompok::class, 'ketua_id'); }
+    public function notifikasi() { return $this->hasMany(Notifikasi::class); }
 }
