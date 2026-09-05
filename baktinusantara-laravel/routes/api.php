@@ -20,3 +20,8 @@ Route::post('/register/desa', [DesaController::class, 'register']);
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::patch('/admin/desa/{profilDesa}/verify', [DesaController::class, 'verify']);
 });
+
+Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
+    Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
+    Route::patch('/desa/aspirasi/{aspirasi}/decide', [AspirasiController::class, 'decide']);
+});
