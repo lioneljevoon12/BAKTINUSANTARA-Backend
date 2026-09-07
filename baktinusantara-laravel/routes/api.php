@@ -12,6 +12,9 @@ use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProgressController;
 use App\Http\Controllers\LuaranController;
 use App\Http\Controllers\PortofolioController;
+use App\Http\Controllers\UniversitasController;
+use App\Http\Controllers\DosenController;
+use App\Http\Controllers\LaporanDosenController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -26,16 +29,18 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/register/desa', [DesaController::class, 'register']);
+Route::post('/register/universitas', [UniversitasController::class, 'register']);
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::patch('/admin/desa/{profilDesa}/verify', [DesaController::class, 'verify']);
     Route::patch('/admin/mahasiswa/{profilMahasiswa}/verify', [MahasiswaController::class, 'verify']);
-
+    Route::patch('/admin/universitas/{profilUniversitas}/verify', [UniversitasController::class, 'verify']);
 });
 
 Route::get('/pos-kebutuhan', [PosKebutuhanController::class, 'index']);
 Route::get('/pos-kebutuhan/{posKebutuhan}', [PosKebutuhanController::class, 'show']);
 Route::get('/portofolio/{slug}', [PortofolioController::class, 'show']);
+Route::get('/dosen', [DosenController::class, 'index']);
 
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
@@ -46,12 +51,26 @@ Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::patch('/desa/proposal/{proposal}/decide', [ProposalController::class, 'decide']);
     Route::get('/desa/luaran', [LuaranController::class, 'indexByDesa']);
     Route::patch('/desa/luaran/{luaran}/verify', [LuaranController::class, 'verify']);
+    Route::post('/desa/laporan-dosen', [LaporanDosenController::class, 'store']);
+});
+
+Route::middleware(['auth:sanctum', 'role:universitas'])->group(function () {
+    Route::post('/universitas/dosen', [UniversitasController::class, 'storeDosen']);
+    Route::get('/universitas/dosen', [UniversitasController::class, 'listDosen']);
+    Route::get('/universitas/laporan-dosen', [UniversitasController::class, 'listLaporan']);
+    Route::patch('/universitas/laporan-dosen/{laporanDosen}/status', [UniversitasController::class, 'updateLaporan']);
+});
+
+Route::middleware(['auth:sanctum', 'role:dosen'])->group(function () {
+    Route::get('/dosen/kelompok', [DosenController::class, 'listKelompok']);
+    Route::patch('/dosen/proposal/{proposal}/kelayakan', [DosenController::class, 'validasiKelayakan']);
 });
 
 Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
     Route::post('/kelompok', [KelompokController::class, 'store']);
     Route::post('/kelompok/{kelompok}/join', [KelompokController::class, 'join']);
     Route::get('/kelompok/{kelompok}', [KelompokController::class, 'show']);
+    Route::post('/kelompok/{kelompok}/set-dosen', [DosenController::class, 'setDosen']);
     Route::post('/proposal', [ProposalController::class, 'store']);
     Route::get('/proposal/mine', [ProposalController::class, 'myProposals']);
     Route::post('/progress', [ProgressController::class, 'store']);
