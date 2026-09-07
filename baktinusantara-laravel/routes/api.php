@@ -10,6 +10,8 @@ use App\Http\Controllers\KelompokController;
 use App\Http\Controllers\PosKebutuhanController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\ProgressController;
+use App\Http\Controllers\LuaranController;
+use App\Http\Controllers\PortofolioController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -33,6 +35,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
 Route::get('/pos-kebutuhan', [PosKebutuhanController::class, 'index']);
 Route::get('/pos-kebutuhan/{posKebutuhan}', [PosKebutuhanController::class, 'show']);
+Route::get('/portofolio/{slug}', [PortofolioController::class, 'show']);
 
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
@@ -41,6 +44,8 @@ Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/pos-kebutuhan', [PosKebutuhanController::class, 'indexByDesa']);
     Route::get('/desa/proposal', [ProposalController::class, 'indexByDesa']);
     Route::patch('/desa/proposal/{proposal}/decide', [ProposalController::class, 'decide']);
+    Route::get('/desa/luaran', [LuaranController::class, 'indexByDesa']);
+    Route::patch('/desa/luaran/{luaran}/verify', [LuaranController::class, 'verify']);
 });
 
 Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
@@ -51,8 +56,10 @@ Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
     Route::get('/proposal/mine', [ProposalController::class, 'myProposals']);
     Route::post('/progress', [ProgressController::class, 'store']);
     Route::post('/proposal/{proposal}/surat-izin-ortu', [ProgressController::class, 'uploadSuratOrtu']);
+    Route::post('/luaran', [LuaranController::class, 'store']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/proposal/{proposal}/progress', [ProgressController::class, 'indexByProposal']);
+    Route::get('/proposal/{proposal}/luaran', [LuaranController::class, 'showByProposal']);
 });
