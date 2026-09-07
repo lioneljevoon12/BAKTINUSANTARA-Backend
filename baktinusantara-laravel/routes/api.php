@@ -7,6 +7,7 @@ use App\Http\Controllers\DesaController;
 use App\Http\Controllers\AuthController; 
 use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\KelompokController;
+use App\Http\Controllers\PosKebutuhanController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -28,9 +29,14 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
 });
 
+Route::get('/pos-kebutuhan', [PosKebutuhanController::class, 'index']);
+Route::get('/pos-kebutuhan/{posKebutuhan}', [PosKebutuhanController::class, 'show']);
+
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
     Route::patch('/desa/aspirasi/{aspirasi}/decide', [AspirasiController::class, 'decide']);
+    Route::post('/desa/pos-kebutuhan', [PosKebutuhanController::class, 'store']);
+    Route::get('/desa/pos-kebutuhan', [PosKebutuhanController::class, 'indexByDesa']);
 });
 
 Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {

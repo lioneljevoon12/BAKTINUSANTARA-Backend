@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Models\Aspirasi;
-use App\Models\PosKebutuhan;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
 class AspirasiService
 {
+    public function __construct(protected PosKebutuhanService $posKebutuhanService) {}
+
     public function create(array $data, $fotoFile = null): Aspirasi
     {
         if ($fotoFile) {
@@ -24,41 +26,36 @@ class AspirasiService
         return Aspirasi::find($id);
     }
 
-    // app/Services/AspirasiService.php  (tambahin method baru ke file yang udah ada)
-
-public function getByDesa(int $desaId)
-{
-    return Aspirasi::where('desa_id', $desaId)
-        ->orderBy('created_at', 'desc')
-        ->get();
-}
-
-public function decide(Aspirasi $aspirasi, array $data): Aspirasi
-{
-    if ($data['action'] === 'reject') {
-        $aspirasi->update([
-            'status' => 'ditolak',
-            'alasan_tolak' => $data['alasan_tolak'],
-        ]);
-        return $aspirasi;
+    public function getByDesa(int $desaId)
+    {
+        return Aspirasi::where('desa_id', $desaId)
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
-    // action === approve
-    $aspirasi->update(['status' => 'terverifikasi']);
+    public function decide(Aspirasi $aspirasi, User $user, array $data): Aspirasi
+    {
+        if ($data['action'] === 'reject') {
+            $aspirasi->update([
+                'status' => 'ditolak',
+                'alasan_tolak' => $data['alasan_tolak'],
+            ]);
+            return $aspirasi;
+        }
 
-    PosKebutuhan::create([
-        'desa_id' => $aspirasi->desa_id,
-        'aspirasi_id' => $aspirasi->id,
-        'judul' => $data['judul'],
-        'deskripsi' => $aspirasi->deskripsi,
-        'kategori' => $aspirasi->kategori,
-        'sdg_codes' => $data['sdg_codes'] ?? null,
-        'kuota_kelompok' => $data['kuota_kelompok'],
-        'deadline' => $data['deadline'],
-        'jurusan_dibutuhkan' => $data['jurusan_dibutuhkan'],
-        'status' => 'open',
-    ]);
+        $aspirasi->update(['status' => 'terverifikasi']);
 
-    return $aspirasi;
-}
+        $this->posKebutuhanService->createDirect($user, [
+            'aspirasi_id' => $aspirasi->id,
+            'judul' => $data['judul'],
+            'deskripsi' => $aspirasi->deskripsi,
+            'kategori' => $aspirasi->kategori,
+            'sdg_codes' => $data['sdg_codes'] ?? null,
+            'kuota_kelompok' => $data['kuota_kelompok'],
+            'deadline' => $data['deadline'],
+            'jurusan_dibutuhkan' => $data['jurusan_dibutuhkan'],
+        ]);
+
+        return $aspirasi;
+    }
 }

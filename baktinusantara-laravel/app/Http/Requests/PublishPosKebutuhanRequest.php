@@ -12,18 +12,19 @@ class PublishPosKebutuhanRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'required|string|max:5000',
+            'kategori' => 'required|in:umkm,kesehatan,lingkungan,pendidikan,fasilitas',
+            'sdg_codes' => 'nullable|array',
+            'kuota_kelompok' => 'required|integer|min:1',
+            'deadline' => 'required|date|after:today',
+            'jurusan_dibutuhkan' => 'required|array',
         ];
     }
 }

@@ -50,7 +50,7 @@ class AspirasiController extends Controller
             abort(403, 'Aspirasi ini bukan milik desa Anda');
         }
 
-        $aspirasi = $this->aspirasiService->decide($aspirasi, $request->validated());
+        $aspirasi = $this->aspirasiService->decide($aspirasi, $request->user(), $request->validated());
 
         return response()->json([
             'message' => $request->action === 'approve' ? 'Aspirasi diverifikasi & pos kebutuhan diterbitkan' : 'Aspirasi ditolak',
