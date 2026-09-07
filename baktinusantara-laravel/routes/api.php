@@ -9,6 +9,7 @@ use App\Http\Controllers\MahasiswaController;
 use App\Http\Controllers\KelompokController;
 use App\Http\Controllers\PosKebutuhanController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\ProgressController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -48,4 +49,10 @@ Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
     Route::get('/kelompok/{kelompok}', [KelompokController::class, 'show']);
     Route::post('/proposal', [ProposalController::class, 'store']);
     Route::get('/proposal/mine', [ProposalController::class, 'myProposals']);
+    Route::post('/progress', [ProgressController::class, 'store']);
+    Route::post('/proposal/{proposal}/surat-izin-ortu', [ProgressController::class, 'uploadSuratOrtu']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/proposal/{proposal}/progress', [ProgressController::class, 'indexByProposal']);
 });
