@@ -8,6 +8,7 @@ class ProfilMahasiswa extends Model
 {
     protected $table = 'profil_mahasiswa';
     protected $fillable = ['user_id', 'nim', 'universitas', 'jurusan', 'semester', 'ktm_file_url', 'verified_at'];
+    protected $hidden = ['ktm_file_url'];
 
     public function user() { return $this->belongsTo(User::class); }
 }

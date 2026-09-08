@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Kelompok;
 use App\Models\PosKebutuhan;
 use App\Models\ProfilDesa;
+use App\Models\ProfilMahasiswa;
 use App\Models\Proposal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,7 @@ class LuaranPortofolioTest extends TestCase
     protected function setupScenario()
     {
         Storage::fake('public');
+        Storage::fake('local');
 
         $userDesa = User::factory()->create(['role' => 'perangkat_desa', 'is_verified' => true]);
         $profilDesa = ProfilDesa::create([
@@ -29,7 +31,7 @@ class LuaranPortofolioTest extends TestCase
             'provinsi' => 'Jawa Timur',
             'latitude' => -7.2575,
             'longitude' => 112.7521,
-            'sk_file_url' => 'sk/dummy.pdf',
+            'sk_file_url' => 'sk/secret_desa_sk.pdf',
             'verified_at' => now(),
         ]);
 
@@ -42,7 +44,7 @@ class LuaranPortofolioTest extends TestCase
             'provinsi' => 'Jawa Tengah',
             'latitude' => -7.5000,
             'longitude' => 110.5000,
-            'sk_file_url' => 'sk/dummy_lain.pdf',
+            'sk_file_url' => 'sk/secret_desa_lain_sk.pdf',
             'verified_at' => now(),
         ]);
 
@@ -59,7 +61,27 @@ class LuaranPortofolioTest extends TestCase
         ]);
 
         $ketua = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
+        ProfilMahasiswa::create([
+            'user_id' => $ketua->id,
+            'nim' => '25091397019',
+            'universitas' => 'Universitas Negeri Surabaya',
+            'jurusan' => 'Desain Komunikasi Visual',
+            'semester' => 6,
+            'ktm_file_url' => 'ktm/secret_ktm_ketua.jpg',
+            'verified_at' => now(),
+        ]);
+
         $anggota = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
+        ProfilMahasiswa::create([
+            'user_id' => $anggota->id,
+            'nim' => '25091397020',
+            'universitas' => 'Universitas Negeri Surabaya',
+            'jurusan' => 'Desain Komunikasi Visual',
+            'semester' => 6,
+            'ktm_file_url' => 'ktm/secret_ktm_anggota.jpg',
+            'verified_at' => now(),
+        ]);
+
         $mahasiswaLain = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
 
         $kelompok = Kelompok::create([
@@ -84,7 +106,7 @@ class LuaranPortofolioTest extends TestCase
         return compact('userDesa', 'profilDesa', 'desaLainUser', 'desaLain', 'pos', 'ketua', 'anggota', 'mahasiswaLain', 'kelompok', 'proposal');
     }
 
-    public function test_mahasiswa_can_submit_luaran_akhir()
+    public function test_mahasiswa_can_submit_luaran_akhir_stored_in_private_disk()
     {
         $data = $this->setupScenario();
 
@@ -102,6 +124,10 @@ class LuaranPortofolioTest extends TestCase
             'proposal_id' => $data['proposal']->id,
             'status_verifikasi' => 'menunggu',
         ]);
+
+        // File deliverable harus ada di private storage (local) dan belum ada di public disk
+        $localPath = $response->json('data.file_deliverable_url');
+        Storage::disk('local')->assertExists($localPath);
     }
 
     public function test_cannot_submit_luaran_if_proposal_not_accepted()
@@ -119,7 +145,7 @@ class LuaranPortofolioTest extends TestCase
             ->assertJsonValidationErrors(['proposal']);
     }
 
-    public function test_desa_can_verify_luaran_and_auto_generate_public_portfolio()
+    public function test_desa_can_verify_luaran_and_auto_generate_public_portfolio_and_pdf()
     {
         $data = $this->setupScenario();
 
@@ -146,6 +172,7 @@ class LuaranPortofolioTest extends TestCase
                     'slug_public',
                     'ringkasan_dampak',
                     'testimoni_desa',
+                    'sertifikat_pdf_url',
                     'published_at',
                 ]
             ]);
@@ -162,6 +189,9 @@ class LuaranPortofolioTest extends TestCase
             'luaran_id' => $luaranId,
             'slug_public' => $slug,
         ]);
+
+        // File PDF Sertifikat Asli harus terbentuk di storage public
+        Storage::disk('public')->assertExists("certificates/{$slug}.pdf");
     }
 
     public function test_unauthorized_desa_cannot_verify_other_village_luaran()
@@ -184,7 +214,7 @@ class LuaranPortofolioTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_public_can_view_verified_portfolio_by_slug()
+    public function test_public_can_view_verified_portfolio_without_sensitive_data_leaks()
     {
         $data = $this->setupScenario();
 
@@ -208,6 +238,14 @@ class LuaranPortofolioTest extends TestCase
             ->assertJsonPath('data.slug_public', $slug)
             ->assertJsonPath('data.ringkasan_dampak', 'Ringkasan dampak sukses.')
             ->assertJsonPath('data.testimoni_desa', 'Sangat memuaskan.');
+
+        // Proteksi kebocoran data sensitif: response JSON tidak boleh mengandung URL KTM atau SK Desa
+        $content = $publicRes->getContent();
+        $this->assertStringNotContainsString('secret_ktm_ketua.jpg', $content);
+        $this->assertStringNotContainsString('secret_ktm_anggota.jpg', $content);
+        $this->assertStringNotContainsString('secret_desa_sk.pdf', $content);
+        $this->assertStringNotContainsString('ktm_file_url', $content);
+        $this->assertStringNotContainsString('sk_file_url', $content);
     }
 
     public function test_desa_can_list_incoming_luaran()

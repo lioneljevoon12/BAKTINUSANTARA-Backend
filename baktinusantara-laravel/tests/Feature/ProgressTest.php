@@ -6,6 +6,7 @@ use App\Models\Kelompok;
 use App\Models\PosKebutuhan;
 use App\Models\ProfilDesa;
 use App\Models\Proposal;
+use App\Models\SuratIzinOrtu;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -97,6 +98,22 @@ class ProgressTest extends TestCase
         ]);
     }
 
+    public function test_progress_must_be_submitted_in_chronological_order()
+    {
+        $data = $this->setupScenario();
+
+        // Coba submit minggu ke-2 langsung sebelum minggu 1 -> 422
+        $response = $this->actingAs($data['ketua'], 'sanctum')->postJson('/api/progress', [
+            'proposal_id' => $data['proposal']->id,
+            'minggu_ke' => 2,
+            'persentase' => 30,
+            'deskripsi' => 'Langsung minggu 2 tanpa minggu 1.',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['minggu_ke']);
+    }
+
     public function test_cannot_submit_duplicate_minggu_ke()
     {
         $data = $this->setupScenario();
@@ -137,7 +154,7 @@ class ProgressTest extends TestCase
     {
         $data = $this->setupScenario();
 
-        // Submit minggu 1 dan minggu 2
+        // Submit minggu 1 dan minggu 2 secara berurutan
         $this->actingAs($data['ketua'], 'sanctum')->postJson('/api/progress', [
             'proposal_id' => $data['proposal']->id,
             'minggu_ke' => 1,
@@ -165,20 +182,49 @@ class ProgressTest extends TestCase
         $unauthResponse->assertStatus(403);
     }
 
-    public function test_only_ketua_can_upload_surat_izin_ortu()
+    public function test_surat_izin_ortu_validation_and_upload()
     {
         $data = $this->setupScenario();
 
-        // Anggota coba upload -> 403
+        // 1. Jika surat izin tidak required (jarak <= 1000 km) -> upload ditolak (422)
+        $notReqProposal = Proposal::create([
+            'kelompok_id' => $data['kelompok']->id,
+            'pos_kebutuhan_id' => $data['pos']->id,
+            'draf_proker' => 'Proker dekat',
+            'file_proposal_url' => 'proposals/dummy.pdf',
+            'status' => 'diterima',
+            'jarak_km' => 350.00,
+        ]);
+        SuratIzinOrtu::create(['proposal_id' => $notReqProposal->id, 'required' => false]);
+
+        $rejectAttempt = $this->actingAs($data['ketua'], 'sanctum')
+            ->postJson("/api/proposal/{$notReqProposal->id}/surat-izin-ortu", [
+                'file_surat' => UploadedFile::fake()->create('surat.pdf', 500, 'application/pdf'),
+            ]);
+        $rejectAttempt->assertStatus(422)
+            ->assertJsonValidationErrors(['surat_izin']);
+
+        // 2. Jika surat izin required (> 1000 km):
+        $reqProposal = Proposal::create([
+            'kelompok_id' => $data['kelompok']->id,
+            'pos_kebutuhan_id' => $data['pos']->id,
+            'draf_proker' => 'Proker jauh luar pulau',
+            'file_proposal_url' => 'proposals/dummy2.pdf',
+            'status' => 'diterima',
+            'jarak_km' => 1450.00,
+        ]);
+        SuratIzinOrtu::create(['proposal_id' => $reqProposal->id, 'required' => true]);
+
+        // Anggota non-ketua coba upload -> 403
         $anggotaAttempt = $this->actingAs($data['anggota'], 'sanctum')
-            ->postJson("/api/proposal/{$data['proposal']->id}/surat-izin-ortu", [
+            ->postJson("/api/proposal/{$reqProposal->id}/surat-izin-ortu", [
                 'file_surat' => UploadedFile::fake()->create('surat_izin.pdf', 500, 'application/pdf'),
             ]);
         $anggotaAttempt->assertStatus(403);
 
         // Ketua upload -> 200
         $ketuaAttempt = $this->actingAs($data['ketua'], 'sanctum')
-            ->postJson("/api/proposal/{$data['proposal']->id}/surat-izin-ortu", [
+            ->postJson("/api/proposal/{$reqProposal->id}/surat-izin-ortu", [
                 'file_surat' => UploadedFile::fake()->create('surat_izin.pdf', 500, 'application/pdf'),
             ]);
 
@@ -186,7 +232,8 @@ class ProgressTest extends TestCase
             ->assertJsonPath('message', 'Surat izin orang tua berhasil diunggah');
 
         $this->assertDatabaseHas('surat_izin_ortu', [
-            'proposal_id' => $data['proposal']->id,
+            'proposal_id' => $reqProposal->id,
+            'required' => 1,
         ]);
     }
 }

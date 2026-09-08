@@ -24,7 +24,8 @@ class PublishPosKebutuhanRequest extends FormRequest
             'sdg_codes' => 'nullable|array',
             'kuota_kelompok' => 'required|integer|min:1',
             'deadline' => 'required|date|after:today',
-            'jurusan_dibutuhkan' => 'required|array',
+            'jurusan_dibutuhkan' => 'required|array|min:1',
+            'jurusan_dibutuhkan.*' => 'required|integer|min:1|max:100',
         ];
     }
 }

@@ -17,7 +17,8 @@ class VerifyAspirasiRequest extends FormRequest
             'judul' => 'required_if:action,approve|string|max:255',
             'kuota_kelompok' => 'required_if:action,approve|integer|min:1',
             'deadline' => 'required_if:action,approve|date|after:today',
-            'jurusan_dibutuhkan' => 'required_if:action,approve|array',
+            'jurusan_dibutuhkan' => 'required_if:action,approve|array|min:1',
+            'jurusan_dibutuhkan.*' => 'required_if:action,approve|integer|min:1|max:100',
             'sdg_codes' => 'nullable|array',
         ];
     }

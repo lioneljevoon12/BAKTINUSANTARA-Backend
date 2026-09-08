@@ -6,6 +6,7 @@ use App\Models\Kelompok;
 use App\Models\PosKebutuhan;
 use App\Models\ProfilDesa;
 use App\Models\ProfilDosen;
+use App\Models\ProfilMahasiswa;
 use App\Models\ProfilUniversitas;
 use App\Models\Proposal;
 use App\Models\User;
@@ -20,6 +21,7 @@ class UniversitasDosenTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'admin', 'is_verified' => true]);
 
+        // Universitas 1: UNESA
         $userUniv = User::factory()->create(['role' => 'universitas', 'is_verified' => true]);
         $profilUniv = ProfilUniversitas::create([
             'user_id' => $userUniv->id,
@@ -28,6 +30,16 @@ class UniversitasDosenTest extends TestCase
             'verified_at' => now(),
         ]);
 
+        // Universitas 2: ITB
+        $userUniv2 = User::factory()->create(['role' => 'universitas', 'is_verified' => true]);
+        $profilUniv2 = ProfilUniversitas::create([
+            'user_id' => $userUniv2->id,
+            'nama_universitas' => 'Institut Teknologi Bandung',
+            'kode_univ' => 'ITB-01',
+            'verified_at' => now(),
+        ]);
+
+        // Dosen 1 (UNESA)
         $userDosen = User::factory()->create(['role' => 'dosen', 'is_verified' => true]);
         $profilDosen = ProfilDosen::create([
             'user_id' => $userDosen->id,
@@ -37,6 +49,7 @@ class UniversitasDosenTest extends TestCase
             'no_hp' => '08123456789',
         ]);
 
+        // Dosen 2 (UNESA)
         $dosenLainUser = User::factory()->create(['role' => 'dosen', 'is_verified' => true]);
         $profilDosenLain = ProfilDosen::create([
             'user_id' => $dosenLainUser->id,
@@ -44,6 +57,16 @@ class UniversitasDosenTest extends TestCase
             'ditambahkan_oleh' => $userUniv->id,
             'nip' => '198802022012121002',
             'no_hp' => '08987654321',
+        ]);
+
+        // Dosen 3 (ITB - Beda Kampus)
+        $dosenBedaKampusUser = User::factory()->create(['role' => 'dosen', 'is_verified' => true]);
+        $profilDosenBedaKampus = ProfilDosen::create([
+            'user_id' => $dosenBedaKampusUser->id,
+            'universitas_id' => $profilUniv2->id,
+            'ditambahkan_oleh' => $userUniv2->id,
+            'nip' => '199003032015121003',
+            'no_hp' => '08111222333',
         ]);
 
         $userDesa = User::factory()->create(['role' => 'perangkat_desa', 'is_verified' => true]);
@@ -72,8 +95,24 @@ class UniversitasDosenTest extends TestCase
         ]);
 
         $ketua = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
+        ProfilMahasiswa::create([
+            'user_id' => $ketua->id,
+            'nim' => '25091397019',
+            'universitas' => 'Universitas Negeri Surabaya',
+            'jurusan' => 'Manajemen',
+            'semester' => 6,
+            'verified_at' => now(),
+        ]);
+
         $anggota = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
-        $mahasiswaLain = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
+        ProfilMahasiswa::create([
+            'user_id' => $anggota->id,
+            'nim' => '25091397020',
+            'universitas' => 'Universitas Negeri Surabaya',
+            'jurusan' => 'Manajemen',
+            'semester' => 6,
+            'verified_at' => now(),
+        ]);
 
         $kelompok = Kelompok::create([
             'nama_kelompok' => 'Kelompok Penggerak Desa',
@@ -99,16 +138,17 @@ class UniversitasDosenTest extends TestCase
             'admin',
             'userUniv',
             'profilUniv',
+            'profilUniv2',
             'userDosen',
             'profilDosen',
             'dosenLainUser',
             'profilDosenLain',
+            'profilDosenBedaKampus',
             'userDesa',
             'profilDesa',
             'pos',
             'ketua',
             'anggota',
-            'mahasiswaLain',
             'kelompok',
             'proposal'
         );
@@ -120,16 +160,16 @@ class UniversitasDosenTest extends TestCase
 
         // 1. Registrasi universitas
         $regResponse = $this->postJson('/api/register/universitas', [
-            'name' => 'Admin ITB',
-            'email' => 'admin@itb.ac.id',
+            'name' => 'Admin UI',
+            'email' => 'admin@ui.ac.id',
             'password' => 'password123',
-            'nama_universitas' => 'Institut Teknologi Bandung',
-            'kode_univ' => 'ITB-01',
+            'nama_universitas' => 'Universitas Indonesia',
+            'kode_univ' => 'UI-01',
             'phone_wa' => '081299998888',
         ]);
 
         $regResponse->assertStatus(201)
-            ->assertJsonPath('data.nama_universitas', 'Institut Teknologi Bandung');
+            ->assertJsonPath('data.nama_universitas', 'Universitas Indonesia');
 
         $univId = $regResponse->json('data.id');
 
@@ -141,7 +181,7 @@ class UniversitasDosenTest extends TestCase
             ->assertJsonPath('message', 'Institusi universitas berhasil diverifikasi');
 
         $this->assertDatabaseHas('users', [
-            'email' => 'admin@itb.ac.id',
+            'email' => 'admin@ui.ac.id',
             'is_verified' => 1,
         ]);
     }
@@ -174,11 +214,11 @@ class UniversitasDosenTest extends TestCase
         ]);
     }
 
-    public function test_kelompok_can_assign_dosen_pembimbing()
+    public function test_kelompok_can_assign_dosen_pembimbing_from_same_university_only()
     {
         $data = $this->setupScenario();
 
-        // Ketua kelompok memilih dosen pembimbing
+        // 1. Sukses jika memilih dosen dari universitas yang sama (UNESA)
         $response = $this->actingAs($data['ketua'], 'sanctum')->postJson("/api/kelompok/{$data['kelompok']->id}/set-dosen", [
             'dosen_id' => $data['profilDosenLain']->id,
         ]);
@@ -187,14 +227,21 @@ class UniversitasDosenTest extends TestCase
             ->assertJsonPath('message', 'Dosen pembimbing lapangan berhasil ditetapkan')
             ->assertJsonPath('data.dosen_id', $data['profilDosenLain']->id);
 
-        // Anggota non-ketua mencoba ganti dosen -> 403
+        // 2. Ditolak (422) jika memilih dosen dari kampus berbeda (ITB)
+        $diffUnivResponse = $this->actingAs($data['ketua'], 'sanctum')->postJson("/api/kelompok/{$data['kelompok']->id}/set-dosen", [
+            'dosen_id' => $data['profilDosenBedaKampus']->id,
+        ]);
+        $diffUnivResponse->assertStatus(422)
+            ->assertJsonValidationErrors(['dosen_id']);
+
+        // 3. Anggota non-ketua mencoba ganti dosen -> 403
         $unauth = $this->actingAs($data['anggota'], 'sanctum')->postJson("/api/kelompok/{$data['kelompok']->id}/set-dosen", [
             'dosen_id' => $data['profilDosen']->id,
         ]);
         $unauth->assertStatus(403);
     }
 
-    public function test_dosen_can_view_kelompok_binaan_and_validate_proposal()
+    public function test_dosen_can_view_kelompok_binaan_and_validate_proposal_with_structured_columns()
     {
         $data = $this->setupScenario();
 
@@ -211,6 +258,13 @@ class UniversitasDosenTest extends TestCase
 
         $validateRes->assertStatus(200)
             ->assertJsonPath('message', 'Validasi kelayakan proposal oleh dosen pembimbing berhasil disimpan');
+
+        // Pastikan kolom terstruktur terisi di database
+        $this->assertDatabaseHas('proposal', [
+            'id' => $data['proposal']->id,
+            'status_kelayakan_dosen' => 'layak',
+            'catatan_dosen' => 'Draf program kerja sangat baik dan sesuai target kompetensi mahasiswa.',
+        ]);
 
         // Dosen lain mencoba validasi -> 403
         $unauth = $this->actingAs($data['dosenLainUser'], 'sanctum')->patchJson("/api/dosen/proposal/{$data['proposal']->id}/kelayakan", [

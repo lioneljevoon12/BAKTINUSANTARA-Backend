@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class LuaranService
 {
+    public function __construct(protected CertificateService $certificateService) {}
+
     protected function assertAnggotaKelompok(Proposal $proposal, User $user): void
     {
         $isMember = $proposal->kelompok->anggota()->where('user_id', $user->id)->exists()
@@ -41,12 +43,12 @@ class LuaranService
             ]);
         }
 
-        $path = $file->store('luaran-deliverables', 'public');
-        $fileUrl = Storage::url($path);
+        // BAB 7.1: Simpan berkas ke private disk (local) sampai diverifikasi oleh desa
+        $path = $file->store('luaran-deliverables', 'local');
 
         if ($existing) {
             $existing->update([
-                'file_deliverable_url' => $fileUrl,
+                'file_deliverable_url' => $path,
                 'deskripsi' => $data['deskripsi'],
                 'status_verifikasi' => 'menunggu',
             ]);
@@ -55,7 +57,7 @@ class LuaranService
 
         return LuaranAkhir::create([
             'proposal_id' => $proposal->id,
-            'file_deliverable_url' => $fileUrl,
+            'file_deliverable_url' => $path,
             'deskripsi' => $data['deskripsi'],
             'status_verifikasi' => 'menunggu',
         ]);
@@ -69,7 +71,19 @@ class LuaranService
             abort(403, 'Anda tidak memiliki wewenang untuk memverifikasi luaran ini.');
         }
 
+        // Publikasikan berkas deliverables dari private disk ke public disk
+        $localPath = $luaran->file_deliverable_url;
+        $publicUrl = $localPath;
+        if (Storage::disk('local')->exists($localPath)) {
+            $fileContent = Storage::disk('local')->get($localPath);
+            $fileName = basename($localPath);
+            $publicPath = "luaran-deliverables/{$fileName}";
+            Storage::disk('public')->put($publicPath, $fileContent);
+            $publicUrl = Storage::url($publicPath);
+        }
+
         $luaran->update([
+            'file_deliverable_url' => $publicUrl,
             'status_verifikasi' => 'verified',
             'disahkan_oleh' => $user->id,
             'disahkan_at' => now(),
@@ -88,10 +102,13 @@ class LuaranService
                 'slug_public' => $slug,
                 'ringkasan_dampak' => $data['ringkasan_dampak'],
                 'testimoni_desa' => $data['testimoni_desa'],
-                'sertifikat_pdf_url' => 'certificates/' . $slug . '.pdf',
                 'published_at' => now(),
             ]
         );
+
+        // Generate PDF Sertifikat Asli
+        $certificateUrl = $this->certificateService->generate($portofolio);
+        $portofolio->update(['sertifikat_pdf_url' => $certificateUrl]);
 
         return $portofolio->load('luaran.proposal.kelompok', 'luaran.proposal.posKebutuhan.desa');
     }
@@ -130,10 +147,48 @@ class LuaranService
     {
         return PortofolioPublik::where('slug_public', $slug)
             ->with([
-                'luaran.disahkanOleh.profilDesa',
-                'luaran.proposal.posKebutuhan.desa',
-                'luaran.proposal.kelompok.ketua',
-                'luaran.proposal.kelompok.anggota.user.profilMahasiswa',
+                'luaran' => function ($query) {
+                    $query->select('id', 'proposal_id', 'file_deliverable_url', 'deskripsi', 'status_verifikasi', 'disahkan_at', 'disahkan_oleh');
+                },
+                'luaran.disahkanOleh' => function ($query) {
+                    $query->select('id', 'name');
+                },
+                'luaran.disahkanOleh.profilDesa' => function ($query) {
+                    $query->select('id', 'user_id', 'nama_desa', 'kecamatan', 'kabupaten', 'provinsi', 'verified_at');
+                },
+                'luaran.proposal' => function ($query) {
+                    $query->select('id', 'kelompok_id', 'pos_kebutuhan_id', 'status', 'submitted_at');
+                },
+                'luaran.proposal.posKebutuhan' => function ($query) {
+                    $query->select('id', 'desa_id', 'judul', 'deskripsi', 'kategori', 'sdg_codes');
+                },
+                'luaran.proposal.posKebutuhan.desa' => function ($query) {
+                    $query->select('id', 'user_id', 'nama_desa', 'kecamatan', 'kabupaten', 'provinsi', 'verified_at');
+                },
+                'luaran.proposal.kelompok' => function ($query) {
+                    $query->select('id', 'nama_kelompok', 'ketua_id', 'dosen_id');
+                },
+                'luaran.proposal.kelompok.ketua' => function ($query) {
+                    $query->select('id', 'name');
+                },
+                'luaran.proposal.kelompok.anggota' => function ($query) {
+                    $query->select('id', 'kelompok_id', 'user_id', 'jurusan_kontribusi', 'role_in_group');
+                },
+                'luaran.proposal.kelompok.anggota.user' => function ($query) {
+                    $query->select('id', 'name');
+                },
+                'luaran.proposal.kelompok.anggota.user.profilMahasiswa' => function ($query) {
+                    $query->select('id', 'user_id', 'nim', 'universitas', 'jurusan', 'semester');
+                },
+                'luaran.proposal.kelompok.dosen' => function ($query) {
+                    $query->select('id', 'user_id', 'universitas_id', 'nip');
+                },
+                'luaran.proposal.kelompok.dosen.user' => function ($query) {
+                    $query->select('id', 'name');
+                },
+                'luaran.proposal.kelompok.dosen.universitas' => function ($query) {
+                    $query->select('id', 'nama_universitas', 'kode_univ');
+                },
             ])
             ->firstOrFail();
     }

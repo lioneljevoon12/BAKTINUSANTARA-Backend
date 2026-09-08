@@ -37,12 +37,11 @@ class DosenService
             abort(403, 'Anda bukan dosen pembimbing dari kelompok pemilik proposal ini.');
         }
 
-        // Catatan review dosen
-        $catatan = "[Review Dosen DPL - " . $userDosen->name . " | " . strtoupper($data['status_kelayakan']) . "]: " . $data['catatan_dosen'];
-        
-        $catatanLama = $proposal->catatan_desa ? $proposal->catatan_desa . "\n\n" : "";
+        // Simpan ke kolom terstruktur khusus Dosen DPL
         $proposal->update([
-            'catatan_desa' => $catatanLama . $catatan,
+            'status_kelayakan_dosen' => $data['status_kelayakan'],
+            'catatan_dosen' => $data['catatan_dosen'],
+            'dosen_reviewed_at' => now(),
         ]);
 
         return $proposal->load('kelompok', 'posKebutuhan');
@@ -60,7 +59,26 @@ class DosenService
             abort(403, 'Hanya ketua kelompok yang memiliki wewenang menetapkan dosen pembimbing.');
         }
 
-        $dosen = ProfilDosen::findOrFail($dosenId);
+        $dosen = ProfilDosen::with('universitas')->findOrFail($dosenId);
+
+        // Validasi kesesuaian asal universitas mahasiswa dengan dosen
+        $profilMahasiswa = $userKetua->profilMahasiswa;
+        if ($profilMahasiswa && $dosen->universitas) {
+            $mhsUniv = strtolower(trim($profilMahasiswa->universitas));
+            $dosenUnivNama = strtolower(trim($dosen->universitas->nama_universitas));
+            $dosenUnivKode = strtolower(trim($dosen->universitas->kode_univ ?? ''));
+
+            $isMatch = ($mhsUniv === $dosenUnivNama)
+                || ($dosenUnivKode && $mhsUniv === $dosenUnivKode)
+                || str_contains($dosenUnivNama, $mhsUniv)
+                || str_contains($mhsUniv, $dosenUnivNama);
+
+            if (!$isMatch) {
+                throw ValidationException::withMessages([
+                    'dosen_id' => 'Dosen pembimbing harus berasal dari perguruan tinggi yang sama dengan mahasiswa (' . $dosen->universitas->nama_universitas . ').',
+                ]);
+            }
+        }
 
         $kelompok->update([
             'dosen_id' => $dosen->id,

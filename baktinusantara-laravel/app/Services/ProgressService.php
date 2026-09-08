@@ -50,6 +50,19 @@ class ProgressService
             ]);
         }
 
+        // Validasi urutan minggu_ke (harus berurutan)
+        if ($data['minggu_ke'] > 1) {
+            $prevWeekExists = ProgressMingguan::where('proposal_id', $proposal->id)
+                ->where('minggu_ke', $data['minggu_ke'] - 1)
+                ->exists();
+
+            if (!$prevWeekExists) {
+                throw ValidationException::withMessages([
+                    'minggu_ke' => 'Laporan progress harus diisi secara berurutan. Harap laporkan minggu ke-' . ($data['minggu_ke'] - 1) . ' terlebih dahulu.',
+                ]);
+            }
+        }
+
         $fotoUrl = null;
         if ($fotoFile) {
             $path = $fotoFile->store('progress-foto', 'public');
@@ -90,15 +103,18 @@ class ProgressService
 
     public function uploadSuratIzinOrtu(Proposal $proposal, User $user, $file): SuratIzinOrtu
     {
-        $proposal->load('kelompok');
+        $proposal->load('kelompok', 'suratIzinOrtu');
         $this->assertKetuaKelompok($proposal, $user);
 
-        $path = $file->store('surat-izin-ortu', 'local');
+        $surat = $proposal->suratIzinOrtu;
 
-        $surat = $proposal->suratIzinOrtu()->firstOrCreate(
-            ['proposal_id' => $proposal->id],
-            ['required' => true]
-        );
+        if (!$surat || !$surat->required) {
+            throw ValidationException::withMessages([
+                'surat_izin' => 'Surat izin orang tua tidak diwajibkan untuk proposal ini karena jarak KKN dalam batas aman (<= 1.000 km).',
+            ]);
+        }
+
+        $path = $file->store('surat-izin-ortu', 'local');
 
         $surat->update([
             'file_url' => $path,
