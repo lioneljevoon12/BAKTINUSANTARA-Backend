@@ -41,6 +41,7 @@ Route::get('/pos-kebutuhan', [PosKebutuhanController::class, 'index']);
 Route::get('/pos-kebutuhan/{posKebutuhan}', [PosKebutuhanController::class, 'show']);
 Route::get('/portofolio/{slug}', [PortofolioController::class, 'show']);
 Route::get('/dosen', [DosenController::class, 'index']);
+Route::get('/universitas', [UniversitasController::class, 'index']);
 
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);

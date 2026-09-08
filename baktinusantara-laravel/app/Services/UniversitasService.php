@@ -103,4 +103,11 @@ class UniversitasService
 
         return $laporan->load('dosen.user', 'desa');
     }
+
+    public function listVerifiedPublic()
+    {
+        return ProfilUniversitas::whereNotNull('verified_at')
+            ->select('id', 'nama_universitas', 'kode_univ')
+            ->get();
+    }
 }

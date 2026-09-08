@@ -13,6 +13,11 @@ class UniversitasController extends Controller
 {
     public function __construct(protected UniversitasService $universitasService) {}
 
+    public function index()
+    {
+        return response()->json($this->universitasService->listVerifiedPublic());
+    }
+
     public function register(RegisterUniversitasRequest $request)
     {
         $univ = $this->universitasService->register($request->validated());

@@ -61,23 +61,12 @@ class DosenService
 
         $dosen = ProfilDosen::with('universitas')->findOrFail($dosenId);
 
-        // Validasi kesesuaian asal universitas mahasiswa dengan dosen
+        // Validasi kesesuaian asal universitas mahasiswa dengan dosen via Foreign Key (universitas_id)
         $profilMahasiswa = $userKetua->profilMahasiswa;
-        if ($profilMahasiswa && $dosen->universitas) {
-            $mhsUniv = strtolower(trim($profilMahasiswa->universitas));
-            $dosenUnivNama = strtolower(trim($dosen->universitas->nama_universitas));
-            $dosenUnivKode = strtolower(trim($dosen->universitas->kode_univ ?? ''));
-
-            $isMatch = ($mhsUniv === $dosenUnivNama)
-                || ($dosenUnivKode && $mhsUniv === $dosenUnivKode)
-                || str_contains($dosenUnivNama, $mhsUniv)
-                || str_contains($mhsUniv, $dosenUnivNama);
-
-            if (!$isMatch) {
-                throw ValidationException::withMessages([
-                    'dosen_id' => 'Dosen pembimbing harus berasal dari perguruan tinggi yang sama dengan mahasiswa (' . $dosen->universitas->nama_universitas . ').',
-                ]);
-            }
+        if ($profilMahasiswa && (int) $profilMahasiswa->universitas_id !== (int) $dosen->universitas_id) {
+            throw ValidationException::withMessages([
+                'dosen_id' => 'Dosen pembimbing harus berasal dari perguruan tinggi yang sama dengan mahasiswa.',
+            ]);
         }
 
         $kelompok->update([

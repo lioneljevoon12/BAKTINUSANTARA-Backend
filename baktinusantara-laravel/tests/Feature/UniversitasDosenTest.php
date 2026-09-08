@@ -97,8 +97,8 @@ class UniversitasDosenTest extends TestCase
         $ketua = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
         ProfilMahasiswa::create([
             'user_id' => $ketua->id,
+            'universitas_id' => $profilUniv->id,
             'nim' => '25091397019',
-            'universitas' => 'Universitas Negeri Surabaya',
             'jurusan' => 'Manajemen',
             'semester' => 6,
             'verified_at' => now(),
@@ -107,8 +107,8 @@ class UniversitasDosenTest extends TestCase
         $anggota = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
         ProfilMahasiswa::create([
             'user_id' => $anggota->id,
+            'universitas_id' => $profilUniv->id,
             'nim' => '25091397020',
-            'universitas' => 'Universitas Negeri Surabaya',
             'jurusan' => 'Manajemen',
             'semester' => 6,
             'verified_at' => now(),

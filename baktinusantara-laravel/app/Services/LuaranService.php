@@ -178,7 +178,10 @@ class LuaranService
                     $query->select('id', 'name');
                 },
                 'luaran.proposal.kelompok.anggota.user.profilMahasiswa' => function ($query) {
-                    $query->select('id', 'user_id', 'nim', 'universitas', 'jurusan', 'semester');
+                    $query->select('id', 'user_id', 'universitas_id', 'nim', 'jurusan', 'semester');
+                },
+                'luaran.proposal.kelompok.anggota.user.profilMahasiswa.universitas' => function ($query) {
+                    $query->select('id', 'nama_universitas', 'kode_univ');
                 },
                 'luaran.proposal.kelompok.dosen' => function ($query) {
                     $query->select('id', 'user_id', 'universitas_id', 'nip');

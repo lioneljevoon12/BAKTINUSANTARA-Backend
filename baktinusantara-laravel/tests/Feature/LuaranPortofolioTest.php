@@ -60,11 +60,19 @@ class LuaranPortofolioTest extends TestCase
             'status' => 'open',
         ]);
 
+        $userUniv = User::factory()->create(['role' => 'universitas', 'is_verified' => true]);
+        $profilUniv = \App\Models\ProfilUniversitas::create([
+            'user_id' => $userUniv->id,
+            'nama_universitas' => 'Universitas Negeri Surabaya',
+            'kode_univ' => 'UNESA-01',
+            'verified_at' => now(),
+        ]);
+
         $ketua = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
         ProfilMahasiswa::create([
             'user_id' => $ketua->id,
+            'universitas_id' => $profilUniv->id,
             'nim' => '25091397019',
-            'universitas' => 'Universitas Negeri Surabaya',
             'jurusan' => 'Desain Komunikasi Visual',
             'semester' => 6,
             'ktm_file_url' => 'ktm/secret_ktm_ketua.jpg',
@@ -74,8 +82,8 @@ class LuaranPortofolioTest extends TestCase
         $anggota = User::factory()->create(['role' => 'mahasiswa', 'is_verified' => true]);
         ProfilMahasiswa::create([
             'user_id' => $anggota->id,
+            'universitas_id' => $profilUniv->id,
             'nim' => '25091397020',
-            'universitas' => 'Universitas Negeri Surabaya',
             'jurusan' => 'Desain Komunikasi Visual',
             'semester' => 6,
             'ktm_file_url' => 'ktm/secret_ktm_anggota.jpg',

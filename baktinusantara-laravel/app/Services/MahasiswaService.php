@@ -25,12 +25,12 @@ class MahasiswaService
 
             return ProfilMahasiswa::create([
                 'user_id' => $user->id,
+                'universitas_id' => $data['universitas_id'],
                 'nim' => $data['nim'],
-                'universitas' => $data['universitas'],
                 'jurusan' => $data['jurusan'],
                 'semester' => $data['semester'] ?? null,
                 'ktm_file_url' => $path,
-            ]);
+            ])->load('universitas', 'user');
         });
     }
 
@@ -38,6 +38,6 @@ class MahasiswaService
     {
         $mhs->update(['verified_at' => now()]);
         $mhs->user()->update(['is_verified' => true]);
-        return $mhs;
+        return $mhs->load('universitas', 'user');
     }
 }
