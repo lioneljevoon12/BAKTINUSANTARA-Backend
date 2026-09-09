@@ -52,20 +52,30 @@ class LuaranService
                 'deskripsi' => $data['deskripsi'],
                 'status_verifikasi' => 'menunggu',
             ]);
-            return $existing;
+            $luaran = $existing;
+        } else {
+            $luaran = LuaranAkhir::create([
+                'proposal_id' => $proposal->id,
+                'file_deliverable_url' => $path,
+                'deskripsi' => $data['deskripsi'],
+                'status_verifikasi' => 'menunggu',
+            ]);
         }
 
-        return LuaranAkhir::create([
-            'proposal_id' => $proposal->id,
-            'file_deliverable_url' => $path,
-            'deskripsi' => $data['deskripsi'],
-            'status_verifikasi' => 'menunggu',
-        ]);
+        $proposal->load('posKebutuhan.desa');
+        if ($proposal->posKebutuhan && $proposal->posKebutuhan->desa && $proposal->posKebutuhan->desa->user_id) {
+            app(NotificationService::class)->send(
+                $proposal->posKebutuhan->desa->user_id,
+                "Kelompok '{$proposal->kelompok->nama_kelompok}' telah mengunggah luaran akhir KKN untuk divalidasi."
+            );
+        }
+
+        return $luaran;
     }
 
     public function verifyByDesa(LuaranAkhir $luaran, User $user, array $data): PortofolioPublik
     {
-        $luaran->load('proposal.posKebutuhan', 'proposal.kelompok');
+        $luaran->load('proposal.posKebutuhan', 'proposal.kelompok.dosen');
 
         if (!$user->profilDesa || $luaran->proposal->posKebutuhan->desa_id !== $user->profilDesa->id) {
             abort(403, 'Anda tidak memiliki wewenang untuk memverifikasi luaran ini.');
@@ -109,6 +119,22 @@ class LuaranService
         // Generate PDF Sertifikat Asli
         $certificateUrl = $this->certificateService->generate($portofolio);
         $portofolio->update(['sertifikat_pdf_url' => $certificateUrl]);
+
+        // Kirim notifikasi ke ketua kelompok
+        if ($luaran->proposal->kelompok && $luaran->proposal->kelompok->ketua_id) {
+            app(NotificationService::class)->send(
+                $luaran->proposal->kelompok->ketua_id,
+                "Selamat! Luaran akhir kelompok Anda telah divalidasi oleh desa '{$user->profilDesa->nama_desa}'. E-Portofolio publik dan sertifikat Anda telah terbit."
+            );
+        }
+
+        // Kirim notifikasi ke dosen pembimbing jika ada
+        if ($luaran->proposal->kelompok && $luaran->proposal->kelompok->dosen && $luaran->proposal->kelompok->dosen->user_id) {
+            app(NotificationService::class)->send(
+                $luaran->proposal->kelompok->dosen->user_id,
+                "Luaran akhir kelompok bimbingan '{$luaran->proposal->kelompok->nama_kelompok}' telah berhasil diverifikasi oleh desa."
+            );
+        }
 
         return $portofolio->load('luaran.proposal.kelompok', 'luaran.proposal.posKebutuhan.desa');
     }

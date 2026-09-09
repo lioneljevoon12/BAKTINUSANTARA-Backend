@@ -101,6 +101,14 @@ class UniversitasService
 
         $laporan->update(['status' => $status]);
 
+        $laporan->load('dosen.user', 'desa.user');
+        if ($laporan->desa && $laporan->desa->user_id) {
+            app(NotificationService::class)->send(
+                $laporan->desa->user_id,
+                "Universitas telah meninjau laporan evaluasi kinerja DPL dengan status: " . strtoupper($status) . "."
+            );
+        }
+
         return $laporan->load('dosen.user', 'desa');
     }
 

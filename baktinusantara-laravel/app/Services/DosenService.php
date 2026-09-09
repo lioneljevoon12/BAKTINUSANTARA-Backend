@@ -30,7 +30,7 @@ class DosenService
 
     public function validasiKelayakanProposal(Proposal $proposal, User $userDosen, array $data): Proposal
     {
-        $proposal->load('kelompok');
+        $proposal->load('kelompok', 'posKebutuhan.desa');
 
         $dosen = $userDosen->profilDosen;
         if (!$dosen || $proposal->kelompok->dosen_id !== $dosen->id) {
@@ -43,6 +43,20 @@ class DosenService
             'catatan_dosen' => $data['catatan_dosen'],
             'dosen_reviewed_at' => now(),
         ]);
+
+        if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
+            app(NotificationService::class)->send(
+                $proposal->kelompok->ketua_id,
+                "Dosen Pembimbing ({$userDosen->name}) telah memberikan tinjauan kelayakan proposal: " . strtoupper($data['status_kelayakan']) . "."
+            );
+        }
+
+        if ($proposal->posKebutuhan && $proposal->posKebutuhan->desa && $proposal->posKebutuhan->desa->user_id) {
+            app(NotificationService::class)->send(
+                $proposal->posKebutuhan->desa->user_id,
+                "Dosen Pembimbing ({$userDosen->name}) telah meninjau proposal kelompok '{$proposal->kelompok->nama_kelompok}' dengan status: " . strtoupper($data['status_kelayakan']) . "."
+            );
+        }
 
         return $proposal->load('kelompok', 'posKebutuhan');
     }
@@ -72,6 +86,13 @@ class DosenService
         $kelompok->update([
             'dosen_id' => $dosen->id,
         ]);
+
+        if ($dosen->user_id) {
+            app(NotificationService::class)->send(
+                $dosen->user_id,
+                "Kelompok '{$kelompok->nama_kelompok}' telah menetapkan Anda sebagai Dosen Pembimbing Lapangan."
+            );
+        }
 
         return $kelompok->load('dosen.user', 'dosen.universitas');
     }

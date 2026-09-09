@@ -102,7 +102,7 @@ class ProposalService
         $filePath = $fileProposal->store('proposal', 'local');
         $suratPath = $suratPengantar ? $suratPengantar->store('surat-pengantar', 'local') : null;
 
-        return DB::transaction(function () use ($kelompok, $pos, $data, $jarakKm, $matchingScore, $filePath, $suratPath) {
+        $proposal = DB::transaction(function () use ($kelompok, $pos, $data, $jarakKm, $matchingScore, $filePath, $suratPath) {
             $proposal = Proposal::create([
                 'kelompok_id' => $kelompok->id,
                 'pos_kebutuhan_id' => $pos->id,
@@ -121,6 +121,15 @@ class ProposalService
 
             return $proposal;
         });
+
+        if ($pos->desa && $pos->desa->user_id) {
+            app(NotificationService::class)->send(
+                $pos->desa->user_id,
+                "Proposal baru diajukan oleh kelompok '{$kelompok->nama_kelompok}' untuk pos kebutuhan '{$pos->judul}'."
+            );
+        }
+
+        return $proposal;
     }
 
     public function decideByDesa(Proposal $proposal, User $user, array $data): Proposal
@@ -134,6 +143,14 @@ class ProposalService
                 'status' => 'ditolak',
                 'catatan_desa' => $data['catatan_desa'],
             ]);
+
+            if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
+                app(NotificationService::class)->send(
+                    $proposal->kelompok->ketua_id,
+                    "Proposal kelompok Anda untuk pos kebutuhan '{$proposal->posKebutuhan->judul}' telah ditolak oleh pihak desa."
+                );
+            }
+
             return $proposal;
         }
 
@@ -154,6 +171,13 @@ class ProposalService
 
         if ($proposal->posKebutuhan->status === 'open') {
             $proposal->posKebutuhan->update(['status' => 'in_progress']);
+        }
+
+        if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
+            app(NotificationService::class)->send(
+                $proposal->kelompok->ketua_id,
+                "Proposal kelompok Anda untuk pos kebutuhan '{$proposal->posKebutuhan->judul}' telah disetujui (diterima) oleh pihak desa."
+            );
         }
 
         return $proposal;

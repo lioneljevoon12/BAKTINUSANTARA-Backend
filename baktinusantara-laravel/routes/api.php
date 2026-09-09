@@ -15,6 +15,8 @@ use App\Http\Controllers\PortofolioController;
 use App\Http\Controllers\UniversitasController;
 use App\Http\Controllers\DosenController;
 use App\Http\Controllers\LaporanDosenController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -42,6 +44,7 @@ Route::get('/pos-kebutuhan/{posKebutuhan}', [PosKebutuhanController::class, 'sho
 Route::get('/portofolio/{slug}', [PortofolioController::class, 'show']);
 Route::get('/dosen', [DosenController::class, 'index']);
 Route::get('/universitas', [UniversitasController::class, 'index']);
+Route::get('/dashboard/metrics', [DashboardController::class, 'metrics']);
 
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
@@ -82,4 +85,7 @@ Route::middleware(['auth:sanctum', 'role:mahasiswa'])->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/proposal/{proposal}/progress', [ProgressController::class, 'indexByProposal']);
     Route::get('/proposal/{proposal}/luaran', [LuaranController::class, 'showByProposal']);
+    Route::get('/notifikasi', [NotificationController::class, 'index']);
+    Route::patch('/notifikasi/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::patch('/notifikasi/{notifikasi}/read', [NotificationController::class, 'markAsRead']);
 });

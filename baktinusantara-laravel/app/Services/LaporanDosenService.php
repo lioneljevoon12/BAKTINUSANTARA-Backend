@@ -14,12 +14,28 @@ class LaporanDosenService
             abort(403, 'Profil desa tidak ditemukan.');
         }
 
-        return LaporanDosen::create([
+        $laporan = LaporanDosen::create([
             'dosen_id' => $data['dosen_id'],
             'desa_id' => $desa->id,
             'proposal_id' => $data['proposal_id'] ?? null,
             'status' => 'menunggu',
             'isi' => $data['isi'],
-        ])->load('dosen.user', 'desa', 'proposal');
+        ])->load('dosen.user', 'dosen.universitas.user', 'desa', 'proposal');
+
+        if ($laporan->dosen && $laporan->dosen->user_id) {
+            app(NotificationService::class)->send(
+                $laporan->dosen->user_id,
+                "Desa '{$desa->nama_desa}' telah mengirimkan evaluasi kinerja pembimbingan KKN."
+            );
+        }
+
+        if ($laporan->dosen && $laporan->dosen->universitas && $laporan->dosen->universitas->user_id) {
+            app(NotificationService::class)->send(
+                $laporan->dosen->universitas->user_id,
+                "Desa '{$desa->nama_desa}' telah mengirimkan evaluasi kinerja untuk DPL {$laporan->dosen->user->name}."
+            );
+        }
+
+        return $laporan;
     }
 }
