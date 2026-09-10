@@ -13,6 +13,10 @@ class ProposalService
 {
     protected const RADIUS_THRESHOLD_KM = 1000;
 
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     protected function getKelompokAsKetua(User $user): Kelompok
     {
         $kelompok = Kelompok::where('ketua_id', $user->id)->first();
@@ -123,7 +127,7 @@ class ProposalService
         });
 
         if ($pos->desa && $pos->desa->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $pos->desa->user_id,
                 "Proposal baru diajukan oleh kelompok '{$kelompok->nama_kelompok}' untuk pos kebutuhan '{$pos->judul}'."
             );
@@ -145,7 +149,7 @@ class ProposalService
             ]);
 
             if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
-                app(NotificationService::class)->send(
+                $this->notificationService->send(
                     $proposal->kelompok->ketua_id,
                     "Proposal kelompok Anda untuk pos kebutuhan '{$proposal->posKebutuhan->judul}' telah ditolak oleh pihak desa."
                 );
@@ -174,7 +178,7 @@ class ProposalService
         }
 
         if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->kelompok->ketua_id,
                 "Proposal kelompok Anda untuk pos kebutuhan '{$proposal->posKebutuhan->judul}' telah disetujui (diterima) oleh pihak desa."
             );

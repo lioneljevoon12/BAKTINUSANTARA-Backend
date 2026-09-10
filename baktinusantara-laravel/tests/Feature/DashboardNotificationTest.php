@@ -85,7 +85,6 @@ class DashboardNotificationTest extends TestCase
             'ketua_id' => $mhsUser->id,
             'dosen_id' => $dosen->id,
             'nama_kelompok' => 'Kelompok KKN UNESA 01',
-            'deskripsi' => 'Pengembangan inovasi desa digital',
         ]);
 
         AnggotaKelompok::create([

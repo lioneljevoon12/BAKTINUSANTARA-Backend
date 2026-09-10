@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class UniversitasService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     public function register(array $data): ProfilUniversitas
     {
         $user = User::create([
@@ -103,13 +107,13 @@ class UniversitasService
 
         $laporan->load('dosen.user', 'desa.user');
         if ($laporan->desa && $laporan->desa->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $laporan->desa->user_id,
                 "Universitas telah meninjau laporan evaluasi kinerja DPL dengan status: " . strtoupper($status) . "."
             );
         }
 
-        return $laporan->load('dosen.user', 'desa');
+        return $laporan;
     }
 
     public function listVerifiedPublic()

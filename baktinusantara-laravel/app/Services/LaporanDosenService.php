@@ -7,6 +7,10 @@ use App\Models\User;
 
 class LaporanDosenService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     public function storeByDesa(User $userDesa, array $data): LaporanDosen
     {
         $desa = $userDesa->profilDesa;
@@ -23,14 +27,14 @@ class LaporanDosenService
         ])->load('dosen.user', 'dosen.universitas.user', 'desa', 'proposal');
 
         if ($laporan->dosen && $laporan->dosen->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $laporan->dosen->user_id,
                 "Desa '{$desa->nama_desa}' telah mengirimkan evaluasi kinerja pembimbingan KKN."
             );
         }
 
         if ($laporan->dosen && $laporan->dosen->universitas && $laporan->dosen->universitas->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $laporan->dosen->universitas->user_id,
                 "Desa '{$desa->nama_desa}' telah mengirimkan evaluasi kinerja untuk DPL {$laporan->dosen->user->name}."
             );

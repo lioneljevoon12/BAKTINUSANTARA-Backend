@@ -11,6 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProgressService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     protected function assertAnggotaKelompok(Proposal $proposal, User $user): void
     {
         $isMember = $proposal->kelompok->anggota()->where('user_id', $user->id)->exists()
@@ -81,14 +85,14 @@ class ProgressService
         $proposal->load(['kelompok.dosen', 'posKebutuhan.desa']);
 
         if ($proposal->posKebutuhan && $proposal->posKebutuhan->desa && $proposal->posKebutuhan->desa->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->posKebutuhan->desa->user_id,
                 "Kelompok '{$proposal->kelompok->nama_kelompok}' telah melaporkan progres minggu ke-{$data['minggu_ke']} ({$data['persentase']}%)."
             );
         }
 
         if ($proposal->kelompok && $proposal->kelompok->dosen && $proposal->kelompok->dosen->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->kelompok->dosen->user_id,
                 "Kelompok bimbingan '{$proposal->kelompok->nama_kelompok}' telah melaporkan progres minggu ke-{$data['minggu_ke']} ({$data['persentase']}%)."
             );

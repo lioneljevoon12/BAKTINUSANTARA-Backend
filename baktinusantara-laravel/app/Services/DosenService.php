@@ -10,6 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 class DosenService
 {
+    public function __construct(
+        protected NotificationService $notificationService
+    ) {}
+
     public function listKelompokBinaan(User $userDosen)
     {
         $dosen = $userDosen->profilDosen;
@@ -45,14 +49,14 @@ class DosenService
         ]);
 
         if ($proposal->kelompok && $proposal->kelompok->ketua_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->kelompok->ketua_id,
                 "Dosen Pembimbing ({$userDosen->name}) telah memberikan tinjauan kelayakan proposal: " . strtoupper($data['status_kelayakan']) . "."
             );
         }
 
         if ($proposal->posKebutuhan && $proposal->posKebutuhan->desa && $proposal->posKebutuhan->desa->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->posKebutuhan->desa->user_id,
                 "Dosen Pembimbing ({$userDosen->name}) telah meninjau proposal kelompok '{$proposal->kelompok->nama_kelompok}' dengan status: " . strtoupper($data['status_kelayakan']) . "."
             );
@@ -88,7 +92,7 @@ class DosenService
         ]);
 
         if ($dosen->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $dosen->user_id,
                 "Kelompok '{$kelompok->nama_kelompok}' telah menetapkan Anda sebagai Dosen Pembimbing Lapangan."
             );

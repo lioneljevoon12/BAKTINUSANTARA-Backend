@@ -15,7 +15,7 @@ class NotificationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $onlyUnread = $request->boolean('unread') || $request->input('unread') === '1';
+        $onlyUnread = $request->boolean('unread');
         $perPage = (int) $request->input('per_page', 50);
 
         $notifications = $this->notificationService->getUserNotifications($request->user(), $onlyUnread, $perPage);

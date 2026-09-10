@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class LuaranService
 {
-    public function __construct(protected CertificateService $certificateService) {}
+    public function __construct(
+        protected CertificateService $certificateService,
+        protected NotificationService $notificationService
+    ) {}
 
     protected function assertAnggotaKelompok(Proposal $proposal, User $user): void
     {
@@ -64,7 +67,7 @@ class LuaranService
 
         $proposal->load('posKebutuhan.desa');
         if ($proposal->posKebutuhan && $proposal->posKebutuhan->desa && $proposal->posKebutuhan->desa->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $proposal->posKebutuhan->desa->user_id,
                 "Kelompok '{$proposal->kelompok->nama_kelompok}' telah mengunggah luaran akhir KKN untuk divalidasi."
             );
@@ -122,7 +125,7 @@ class LuaranService
 
         // Kirim notifikasi ke ketua kelompok
         if ($luaran->proposal->kelompok && $luaran->proposal->kelompok->ketua_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $luaran->proposal->kelompok->ketua_id,
                 "Selamat! Luaran akhir kelompok Anda telah divalidasi oleh desa '{$user->profilDesa->nama_desa}'. E-Portofolio publik dan sertifikat Anda telah terbit."
             );
@@ -130,7 +133,7 @@ class LuaranService
 
         // Kirim notifikasi ke dosen pembimbing jika ada
         if ($luaran->proposal->kelompok && $luaran->proposal->kelompok->dosen && $luaran->proposal->kelompok->dosen->user_id) {
-            app(NotificationService::class)->send(
+            $this->notificationService->send(
                 $luaran->proposal->kelompok->dosen->user_id,
                 "Luaran akhir kelompok bimbingan '{$luaran->proposal->kelompok->nama_kelompok}' telah berhasil diverifikasi oleh desa."
             );
