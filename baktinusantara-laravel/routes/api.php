@@ -17,6 +17,7 @@ use App\Http\Controllers\DosenController;
 use App\Http\Controllers\LaporanDosenController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\WilayahController;
 
 Route::post('/aspirasi', [AspirasiController::class, 'store']);
 Route::get('/aspirasi/{ticket}', [AspirasiController::class, 'show']);
@@ -45,6 +46,13 @@ Route::get('/portofolio/{slug}', [PortofolioController::class, 'show']);
 Route::get('/dosen', [DosenController::class, 'index']);
 Route::get('/universitas', [UniversitasController::class, 'index']);
 Route::get('/dashboard/metrics', [DashboardController::class, 'metrics']);
+
+Route::prefix('wilayah')->group(function () {
+    Route::get('/provinsi', [WilayahController::class, 'provinsi']);
+    Route::get('/kabupaten/{provinceId}', [WilayahController::class, 'kabupaten']);
+    Route::get('/kecamatan/{regencyId}', [WilayahController::class, 'kecamatan']);
+    Route::get('/desa/{districtId}', [WilayahController::class, 'desa']);
+});
 
 Route::middleware(['auth:sanctum', 'role:perangkat_desa'])->group(function () {
     Route::get('/desa/aspirasi', [AspirasiController::class, 'indexByDesa']);
